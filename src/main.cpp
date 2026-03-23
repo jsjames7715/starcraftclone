@@ -26,16 +26,21 @@ struct Vec3 { float x,y,z; Vec3(float X=0,float Y=0,float Z=0):x(X),y(Y),z(Z){} 
 enum class Team { Player, Enemy, Neutral };
 
 enum class UnitType { 
-    Worker, Marine, Medic, Tank, Fighter, Zergling, Ultralisk
+    Worker, Marine, Medic, Tank, Fighter, Zergling, Ultralisk,
+    Ghost, Vulture, Goliath, Wraith, Battlecruiser, ScienceVessel,
+    Firebat, Dropship, Valkyrie, Corsair, Scout, DarkTemplar,
+    Dragoon, Zealot, Archon, Carrier, Reaver, Shuttle
 };
 
 enum class BuildingType {
     CommandCentre, Barracks, Factory, Starport, SupplyDepot, Refinery,
-    EnemyBase, EnemyBarracks
+    EnemyBase, EnemyBarracks, Turret, Bunker, Academy, Armory, TechLab,
+    ComSat, NuclearSilo, SpiderMine, Pylon, Gateway, CyberneticsCore,
+    Stargate, FleetBeacon, RoboticsBay, Observatory
 };
 
-enum class GameState { Playing, Paused, GameOver, Victory };
-enum class GameMode { Campaign, Skirmish, Deathmatch };
+enum class GameState { Playing, Paused, GameOver, Victory, Menu };
+enum class GameMode { Campaign, Skirmish, Deathmatch, Survival, Rush, Economic, TowerDefense, CaptureTheFlag, KingOfTheHill, Custom };
 
 const int MAP_W = 300;
 const int MAP_H = 300;
@@ -73,6 +78,24 @@ struct Unit {
             case UnitType::Fighter: maxHealth=health=100; attackPower=25; armor=2; break;
             case UnitType::Zergling: maxHealth=health=40; attackPower=8; armor=0; break;
             case UnitType::Ultralisk: maxHealth=health=400; attackPower=40; armor=5; break;
+            case UnitType::Ghost: maxHealth=health=90; attackPower=20; armor=1; break;
+            case UnitType::Vulture: maxHealth=health=80; attackPower=20; armor=0; break;
+            case UnitType::Goliath: maxHealth=health=150; attackPower=30; armor=2; break;
+            case UnitType::Wraith: maxHealth=health=120; attackPower=25; armor=2; break;
+            case UnitType::Battlecruiser: maxHealth=health=500; attackPower=60; armor=5; break;
+            case UnitType::ScienceVessel: maxHealth=health=200; attackPower=0; armor=2; break;
+            case UnitType::Firebat: maxHealth=health=100; attackPower=16; armor=1; break;
+            case UnitType::Dropship: maxHealth=health=150; attackPower=0; armor=2; break;
+            case UnitType::Valkyrie: maxHealth=health=180; attackPower=35; armor=3; break;
+            case UnitType::Corsair: maxHealth=health=100; attackPower=18; armor=1; break;
+            case UnitType::Scout: maxHealth=health=80; attackPower=15; armor=0; break;
+            case UnitType::DarkTemplar: maxHealth=health=80; attackPower=45; armor=1; break;
+            case UnitType::Dragoon: maxHealth=health=180; attackPower=30; armor=2; break;
+            case UnitType::Zealot: maxHealth=health=160; attackPower=20; armor=1; break;
+            case UnitType::Archon: maxHealth=health=350; attackPower=50; armor=3; break;
+            case UnitType::Carrier: maxHealth=health=400; attackPower=40; armor=4; break;
+            case UnitType::Reaver: maxHealth=health=200; attackPower=100; armor=2; break;
+            case UnitType::Shuttle: maxHealth=health=120; attackPower=0; armor=2; break;
         }
     }
     
@@ -87,6 +110,24 @@ struct Unit {
                 case UnitType::Fighter: return 'f';
                 case UnitType::Zergling: return 'z';
                 case UnitType::Ultralisk: return 'U';
+                case UnitType::Ghost: return 'g';
+                case UnitType::Vulture: return 'v';
+                case UnitType::Goliath: return 'G';
+                case UnitType::Wraith: return 'W';
+                case UnitType::Battlecruiser: return 'B';
+                case UnitType::ScienceVessel: return 'V';
+                case UnitType::Firebat: return 'F';
+                case UnitType::Dropship: return 'D';
+                case UnitType::Valkyrie: return 'A';
+                case UnitType::Corsair: return 'C';
+                case UnitType::Scout: return 'S';
+                case UnitType::DarkTemplar: return 'D';
+                case UnitType::Dragoon: return 'd';
+                case UnitType::Zealot: return 'Z';
+                case UnitType::Archon: return 'A';
+                case UnitType::Carrier: return 'c';
+                case UnitType::Reaver: return 'R';
+                case UnitType::Shuttle: return 'h';
             }
         } else {
             switch(type) {
@@ -96,7 +137,24 @@ struct Unit {
                 case UnitType::Fighter: return 'F';
                 case UnitType::Zergling: return 'Z';
                 case UnitType::Ultralisk: return 'X';
-                default: return 'E';
+                case UnitType::Ghost: return 's';
+                case UnitType::Vulture: return 't';
+                case UnitType::Goliath: return 'y';
+                case UnitType::Wraith: return 'r';
+                case UnitType::Battlecruiser: return 'b';
+                case UnitType::ScienceVessel: return 'n';
+                case UnitType::Firebat: return 'f';
+                case UnitType::Dropship: return 'd';
+                case UnitType::Valkyrie: return 'a';
+                case UnitType::Corsair: return 'c';
+                case UnitType::Scout: return 's';
+                case UnitType::DarkTemplar: return 'x';
+                case UnitType::Dragoon: return 'D';
+                case UnitType::Zealot: return 'z';
+                case UnitType::Archon: return 'a';
+                case UnitType::Carrier: return 'C';
+                case UnitType::Reaver: return 'e';
+                case UnitType::Shuttle: return 'H';
             }
         }
         return '?';
@@ -111,6 +169,24 @@ struct Unit {
             case UnitType::Fighter: return 250;
             case UnitType::Zergling: return 50;
             case UnitType::Ultralisk: return 400;
+            case UnitType::Ghost: return 200;
+            case UnitType::Vulture: return 150;
+            case UnitType::Goliath: return 250;
+            case UnitType::Wraith: return 200;
+            case UnitType::Battlecruiser: return 600;
+            case UnitType::ScienceVessel: return 350;
+            case UnitType::Firebat: return 150;
+            case UnitType::Dropship: return 250;
+            case UnitType::Valkyrie: return 350;
+            case UnitType::Corsair: return 200;
+            case UnitType::Scout: return 100;
+            case UnitType::DarkTemplar: return 250;
+            case UnitType::Dragoon: return 200;
+            case UnitType::Zealot: return 150;
+            case UnitType::Archon: return 400;
+            case UnitType::Carrier: return 550;
+            case UnitType::Reaver: return 400;
+            case UnitType::Shuttle: return 200;
         }
         return 100;
     }
@@ -140,6 +216,20 @@ struct Building {
             case BuildingType::Refinery: maxHealth=health=600; break;
             case BuildingType::EnemyBase: maxHealth=health=2000; break;
             case BuildingType::EnemyBarracks: maxHealth=health=1000; break;
+            case BuildingType::Turret: maxHealth=health=400; size=Vec2(1,1); break;
+            case BuildingType::Bunker: maxHealth=health=600; break;
+            case BuildingType::Academy: maxHealth=health=700; break;
+            case BuildingType::Armory: maxHealth=health=800; break;
+            case BuildingType::TechLab: maxHealth=health=500; break;
+            case BuildingType::ComSat: maxHealth=health=500; break;
+            case BuildingType::NuclearSilo: maxHealth=health=600; break;
+            case BuildingType::Pylon: maxHealth=health=300; size=Vec2(2,2); break;
+            case BuildingType::Gateway: maxHealth=health=800; break;
+            case BuildingType::CyberneticsCore: maxHealth=health=700; break;
+            case BuildingType::Stargate: maxHealth=health=900; break;
+            case BuildingType::FleetBeacon: maxHealth=health=600; break;
+            case BuildingType::RoboticsBay: maxHealth=health=800; break;
+            case BuildingType::Observatory: maxHealth=health=600; break;
         }
     }
     
@@ -153,15 +243,31 @@ struct Building {
                 case BuildingType::Starport: return 'S';
                 case BuildingType::SupplyDepot: return 'D';
                 case BuildingType::Refinery: return 'R';
-                default: return '?';
+                case BuildingType::Turret: return 'T';
+                case BuildingType::Bunker: return 'U';
+                case BuildingType::Academy: return 'A';
+                case BuildingType::Armory: return 'M';
+                case BuildingType::TechLab: return 'L';
+                case BuildingType::ComSat: return 'O';
+                case BuildingType::NuclearSilo: return 'N';
+                case BuildingType::Pylon: return 'P';
+                case BuildingType::Gateway: return 'G';
+                case BuildingType::CyberneticsCore: return 'Y';
+                case BuildingType::Stargate: return 'K';
+                case BuildingType::FleetBeacon: return 'E';
+                case BuildingType::RoboticsBay: return 'J';
+                case BuildingType::Observatory: return 'V';
             }
         } else {
             switch(type) {
                 case BuildingType::EnemyBase: return 'c';
                 case BuildingType::EnemyBarracks: return 'b';
+                case BuildingType::Turret: return 't';
+                case BuildingType::Bunker: return 'u';
                 default: return 'e';
             }
         }
+        return '?';
     }
     
     int cost() const {
@@ -172,6 +278,20 @@ struct Building {
             case BuildingType::Starport: return 250;
             case BuildingType::SupplyDepot: return 100;
             case BuildingType::Refinery: return 100;
+            case BuildingType::Turret: return 75;
+            case BuildingType::Bunker: return 100;
+            case BuildingType::Academy: return 150;
+            case BuildingType::Armory: return 200;
+            case BuildingType::TechLab: return 150;
+            case BuildingType::ComSat: return 150;
+            case BuildingType::NuclearSilo: return 200;
+            case BuildingType::Pylon: return 100;
+            case BuildingType::Gateway: return 150;
+            case BuildingType::CyberneticsCore: return 200;
+            case BuildingType::Stargate: return 250;
+            case BuildingType::FleetBeacon: return 200;
+            case BuildingType::RoboticsBay: return 250;
+            case BuildingType::Observatory: return 150;
             default: return 200;
         }
     }
