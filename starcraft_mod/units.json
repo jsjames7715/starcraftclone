@@ -1,0 +1,12 @@
+{
+  "units": {
+    "infantry": {
+      "health": 100,
+      "attack": 20
+    },
+    "tank": {
+      "health": 200,
+      "attack": 50
+    }
+  }
+}
