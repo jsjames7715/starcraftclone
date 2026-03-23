@@ -19,6 +19,9 @@
 #include <ctime>
 #include <algorithm>
 #include <cmath>
+#include <map>
+#include <functional>
+#include <sstream>
 
 struct Vec2 { int x, y; Vec2(int X=0,int Y=0):x(X),y(Y){} Vec2 operator+(const Vec2& o)const{return Vec2(x+o.x,y+o.y);} Vec2 operator-(const Vec2& o)const{return Vec2(x-o.x,y-o.y);} int dist(const Vec2& o)const{return std::abs(x-o.x)+std::abs(y-o.y);} bool operator==(const Vec2& o)const{return x==o.x&&y==o.y;} bool operator!=(const Vec2& o)const{return x!=o.x||y!=o.y;} };
 struct Vec3 { float x,y,z; Vec3(float X=0,float Y=0,float Z=0):x(X),y(Y),z(Z){} Vec3 normalized()const{float l=std::sqrt(x*x+y*y+z*z);return l?Vec3(x/l,y/l,z/l):Vec3();} };
@@ -29,18 +32,36 @@ enum class UnitType {
     Worker, Marine, Medic, Tank, Fighter, Zergling, Ultralisk,
     Ghost, Vulture, Goliath, Wraith, Battlecruiser, ScienceVessel,
     Firebat, Dropship, Valkyrie, Corsair, Scout, DarkTemplar,
-    Dragoon, Zealot, Archon, Carrier, Reaver, Shuttle
+    Dragoon, Zealot, Archon, Carrier, Reaver, Shuttle,
+    Mutalisk, Hydralisk, Defiler, Lurker, Broodling, Guardian,
+    Devourer, SporeColony, SunkenColony, Lair, Hive, UltraliskDen,
+    ScienceFacility, CovertOps, PhysicsLab, FusionCore, MachineShop,
+    EngineeringBay, WeaponRefinery, CommandCenter, Nexus, Probe,
+    Arbiter, HighTemplar, Interceptor, Scarab, Overlord, Creeper,
+    Queen, SpawningPool, EvolutionChamber, Extractor, Spire, NydusCanal,
+    Baneling, Roach, Infestor, SwarmHost, Viper, Overseer
 };
 
 enum class BuildingType {
     CommandCentre, Barracks, Factory, Starport, SupplyDepot, Refinery,
     EnemyBase, EnemyBarracks, Turret, Bunker, Academy, Armory, TechLab,
     ComSat, NuclearSilo, SpiderMine, Pylon, Gateway, CyberneticsCore,
-    Stargate, FleetBeacon, RoboticsBay, Observatory
+    Stargate, FleetBeacon, RoboticsBay, Observatory,
+    Hatchery, Lair, Hive, Spire, GreaterSpire, SpawningPool, EvolutionChamber,
+    Extractor, HydraliskDen, LurkerAspect, SporeColony, SunkenColony,
+    UltraliskCavern, NydusCanal, InfestationPit, GreatHall,
+    Nexus, GatewayZerg, CyberneticsZerg, StargateProtoss, FleetBeaconProtoss,
+    RoboticsBayProtoss, TwilightCouncil, DarkShrine, TemplarArchives,
+    Forge, RoboticsFacility, ObservatoryProtoss, Cannon, PhotonCannon,
+    ShieldBattery, WarpGate, assimilator, PsiDisruptor, UltraliskDenZerg,
+    CreepTumor, InfestorTerran, GhostAcademy, MissileTurret, PointDefense,
+    PlanetaryFortress, OrbitalCommand, NuclearMissile, TechLabZerg, WarpPrism, 
+    Disruptor, Oracle, Tempest, Mothership, MothershipCore, NexusProbe, 
+    PhotonCannonBuilding, ShieldBatteryBuilding, EngineeringBay
 };
 
 enum class GameState { Playing, Paused, GameOver, Victory, Menu };
-enum class GameMode { Campaign, Skirmish, Deathmatch, Survival, Rush, Economic, TowerDefense, CaptureTheFlag, KingOfTheHill, Custom };
+enum class GameMode { Campaign, Skirmish, Deathmatch, Survival, Rush, Economic, TowerDefense, CaptureTheFlag, KingOfTheHill, Custom, Arena, Blitz, Puzzle, BossRush, Escort, Assault, Defense, Recon, Sabotage, HeroMode, Nightmare, IronMan, WeeklyChallenge, DailyChallenge, Tournament, Multiplayer, LAN, Online, Cooperative, Solo, Practice, Tutorial, Challenge, Endless, gauntlet };
 
 const int MAP_W = 300;
 const int MAP_H = 300;
@@ -96,6 +117,26 @@ struct Unit {
             case UnitType::Carrier: maxHealth=health=400; attackPower=40; armor=4; break;
             case UnitType::Reaver: maxHealth=health=200; attackPower=100; armor=2; break;
             case UnitType::Shuttle: maxHealth=health=120; attackPower=0; armor=2; break;
+            case UnitType::Mutalisk: maxHealth=health=120; attackPower=25; armor=1; break;
+            case UnitType::Hydralisk: maxHealth=health=90; attackPower=15; armor=0; break;
+            case UnitType::Defiler: maxHealth=health=80; attackPower=0; armor=0; break;
+            case UnitType::Lurker: maxHealth=health=120; attackPower=30; armor=1; break;
+            case UnitType::Broodling: maxHealth=health=30; attackPower=8; armor=0; break;
+            case UnitType::Guardian: maxHealth=health=150; attackPower=40; armor=2; break;
+            case UnitType::Devourer: maxHealth=health=250; attackPower=35; armor=3; break;
+            case UnitType::Queen: maxHealth=health=100; attackPower=15; armor=1; break;
+            case UnitType::Baneling: maxHealth=health=30; attackPower=40; armor=0; break;
+            case UnitType::Roach: maxHealth=health=100; attackPower=18; armor=1; break;
+            case UnitType::Infestor: maxHealth=health=90; attackPower=0; armor=0; break;
+            case UnitType::SwarmHost: maxHealth=health=140; attackPower=0; armor=2; break;
+            case UnitType::Viper: maxHealth=health=120; attackPower=0; armor=1; break;
+            case UnitType::Overseer: maxHealth=health=200; attackPower=0; armor=2; break;
+            case UnitType::Arbiter: maxHealth=health=300; attackPower=20; armor=3; break;
+            case UnitType::HighTemplar: maxHealth=health=80; attackPower=0; armor=0; break;
+            case UnitType::Interceptor: maxHealth=health=40; attackPower=8; armor=0; break;
+            case UnitType::Scarab: maxHealth=health=50; attackPower=20; armor=0; break;
+            case UnitType::Overlord: maxHealth=health=400; attackPower=0; armor=2; break;
+            case UnitType::Probe: maxHealth=health=50; attackPower=5; armor=0; break;
         }
     }
     
@@ -155,6 +196,26 @@ struct Unit {
                 case UnitType::Carrier: return 'C';
                 case UnitType::Reaver: return 'e';
                 case UnitType::Shuttle: return 'H';
+                case UnitType::Mutalisk: return 'm';
+                case UnitType::Hydralisk: return 'h';
+                case UnitType::Defiler: return 'd';
+                case UnitType::Lurker: return 'l';
+                case UnitType::Broodling: return 'b';
+                case UnitType::Guardian: return 'g';
+                case UnitType::Devourer: return 'v';
+                case UnitType::Queen: return 'q';
+                case UnitType::Baneling: return 'n';
+                case UnitType::Roach: return 'r';
+                case UnitType::Infestor: return 'i';
+                case UnitType::SwarmHost: return 's';
+                case UnitType::Viper: return 'x';
+                case UnitType::Overseer: return 'o';
+                case UnitType::Arbiter: return 'a';
+                case UnitType::HighTemplar: return 't';
+                case UnitType::Interceptor: return 'j';
+                case UnitType::Scarab: return 'c';
+                case UnitType::Overlord: return 'u';
+                case UnitType::Probe: return 'p';
             }
         }
         return '?';
@@ -187,6 +248,26 @@ struct Unit {
             case UnitType::Carrier: return 550;
             case UnitType::Reaver: return 400;
             case UnitType::Shuttle: return 200;
+            case UnitType::Mutalisk: return 100;
+            case UnitType::Hydralisk: return 75;
+            case UnitType::Defiler: return 100;
+            case UnitType::Lurker: return 150;
+            case UnitType::Broodling: return 30;
+            case UnitType::Guardian: return 200;
+            case UnitType::Devourer: return 250;
+            case UnitType::Queen: return 125;
+            case UnitType::Baneling: return 50;
+            case UnitType::Roach: return 75;
+            case UnitType::Infestor: return 150;
+            case UnitType::SwarmHost: return 200;
+            case UnitType::Viper: return 250;
+            case UnitType::Overseer: return 150;
+            case UnitType::Arbiter: return 300;
+            case UnitType::HighTemplar: return 150;
+            case UnitType::Interceptor: return 50;
+            case UnitType::Scarab: return 75;
+            case UnitType::Overlord: return 100;
+            case UnitType::Probe: return 50;
         }
         return 100;
     }
@@ -230,6 +311,42 @@ struct Building {
             case BuildingType::FleetBeacon: maxHealth=health=600; break;
             case BuildingType::RoboticsBay: maxHealth=health=800; break;
             case BuildingType::Observatory: maxHealth=health=600; break;
+            case BuildingType::Hatchery: maxHealth=health=1200; break;
+            case BuildingType::Lair: maxHealth=health=1500; break;
+            case BuildingType::Hive: maxHealth=health=1800; break;
+            case BuildingType::Spire: maxHealth=health=800; break;
+            case BuildingType::GreaterSpire: maxHealth=health=1000; break;
+            case BuildingType::SpawningPool: maxHealth=health=600; break;
+            case BuildingType::EvolutionChamber: maxHealth=health=500; break;
+            case BuildingType::Extractor: maxHealth=health=400; break;
+            case BuildingType::HydraliskDen: maxHealth=health=700; break;
+            case BuildingType::SporeColony: maxHealth=health=400; size=Vec2(1,1); break;
+            case BuildingType::SunkenColony: maxHealth=health=400; size=Vec2(1,1); break;
+            case BuildingType::UltraliskCavern: maxHealth=health=800; break;
+            case BuildingType::NydusCanal: maxHealth=health=600; break;
+            case BuildingType::InfestationPit: maxHealth=health=700; break;
+            case BuildingType::GreatHall: maxHealth=health=1400; break;
+            case BuildingType::Nexus: maxHealth=health=1000; break;
+            case BuildingType::Forge: maxHealth=health=600; break;
+            case BuildingType::RoboticsFacility: maxHealth=health=800; break;
+            case BuildingType::TwilightCouncil: maxHealth=health=700; break;
+            case BuildingType::DarkShrine: maxHealth=health=500; break;
+            case BuildingType::TemplarArchives: maxHealth=health=600; break;
+            case BuildingType::PhotonCannon: maxHealth=health=400; size=Vec2(1,1); break;
+            case BuildingType::ShieldBattery: maxHealth=health=300; size=Vec2(1,1); break;
+            case BuildingType::WarpGate: maxHealth=health=600; break;
+            case BuildingType::PlanetaryFortress: maxHealth=health=1500; break;
+            case BuildingType::OrbitalCommand: maxHealth=health=1200; break;
+            case BuildingType::EngineeringBay: maxHealth=health=600; break;
+            case BuildingType::GhostAcademy: maxHealth=health=700; break;
+            case BuildingType::MissileTurret: maxHealth=health=400; size=Vec2(1,1); break;
+            case BuildingType::PointDefense: maxHealth=health=350; size=Vec2(1,1); break;
+            case BuildingType::WarpPrism: maxHealth=health=600; break;
+            case BuildingType::Disruptor: maxHealth=health=700; break;
+            case BuildingType::Oracle: maxHealth=health=500; break;
+            case BuildingType::Tempest: maxHealth=health=800; break;
+            case BuildingType::Mothership: maxHealth=health=1500; break;
+            case BuildingType::MothershipCore: maxHealth=health=1000; break;
         }
     }
     
@@ -257,6 +374,41 @@ struct Building {
                 case BuildingType::FleetBeacon: return 'E';
                 case BuildingType::RoboticsBay: return 'J';
                 case BuildingType::Observatory: return 'V';
+                case BuildingType::Hatchery: return 'H';
+                case BuildingType::Lair: return 'L';
+                case BuildingType::Hive: return 'I';
+                case BuildingType::Spire: return 'X';
+                case BuildingType::SpawningPool: return 'S';
+                case BuildingType::EvolutionChamber: return 'E';
+                case BuildingType::Extractor: return 'X';
+                case BuildingType::HydraliskDen: return 'H';
+                case BuildingType::SporeColony: return 'S';
+                case BuildingType::SunkenColony: return 'U';
+                case BuildingType::UltraliskCavern: return 'U';
+                case BuildingType::NydusCanal: return 'N';
+                case BuildingType::InfestationPit: return 'I';
+                case BuildingType::GreatHall: return 'G';
+                case BuildingType::Nexus: return 'N';
+                case BuildingType::Forge: return 'F';
+                case BuildingType::RoboticsFacility: return 'R';
+                case BuildingType::TwilightCouncil: return 'T';
+                case BuildingType::DarkShrine: return 'D';
+                case BuildingType::TemplarArchives: return 'T';
+                case BuildingType::PhotonCannon: return 'P';
+                case BuildingType::ShieldBattery: return 'B';
+                case BuildingType::WarpGate: return 'W';
+                case BuildingType::PlanetaryFortress: return 'F';
+                case BuildingType::OrbitalCommand: return 'O';
+                case BuildingType::EngineeringBay: return 'E';
+                case BuildingType::GhostAcademy: return 'G';
+                case BuildingType::MissileTurret: return 'M';
+                case BuildingType::PointDefense: return 'P';
+                case BuildingType::WarpPrism: return 'W';
+                case BuildingType::Disruptor: return 'D';
+                case BuildingType::Oracle: return 'O';
+                case BuildingType::Tempest: return 'T';
+                case BuildingType::Mothership: return 'M';
+                case BuildingType::MothershipCore: return 'C';
             }
         } else {
             switch(type) {
@@ -382,7 +534,307 @@ struct GameStats {
     int resourcesGathered = 0;
     float gameTime = 0;
     int wavesCompleted = 0;
+    int totalDamageDealt = 0;
+    int totalDamageTaken = 0;
+    int unitsBuilt = 0;
+    int buildingsBuilt = 0;
+    int missionsCompleted = 0;
+    int bossesDefeated = 0;
+    int fastestWave = 999;
+    int highestWave = 0;
+    int totalKills = 0;
+    int totalDeaths = 0;
+    int resourcesSpent = 0;
+    int resourcesEarned = 0;
 };
+
+struct Achievement {
+    std::string name;
+    std::string description;
+    bool unlocked = false;
+    int requiredValue;
+    int currentValue = 0;
+};
+std::vector<Achievement> achievements = {
+    {"First Blood", "Kill your first enemy unit", false, 1},
+    {"Rusher", "Complete wave 1", false, 1},
+    {"Veteran", "Complete wave 5", false, 5},
+    {"Elite", "Complete wave 10", false, 10},
+    {"Legendary", "Complete wave 20", false, 20},
+    {"Economist", "Gather 1000 minerals", false, 1000},
+    {"Wealthy", "Gather 5000 minerals", false, 5000},
+    {"Builder", "Build 10 buildings", false, 10},
+    {"Constructor", "Build 25 buildings", false, 25},
+    {"Army Builder", "Train 50 units", false, 50},
+    {"Horde", "Train 100 units", false, 100},
+    {"Destroyer", "Destroy 10 enemy buildings", false, 10},
+    {"Raider", "Destroy 25 enemy buildings", false, 25},
+    {"Overwhelming Force", "Destroy 50 enemy buildings", false, 50},
+    {"Speed Demon", "Complete wave 3 in under 30 seconds", false, 1},
+    {"Survivalist", "Survive 10 waves without losing a building", false, 1},
+    {"Clean Sweep", "Destroy all enemy buildings in under 5 minutes", false, 1},
+    {"Efficiency Expert", "Gather 2000 minerals with only 5 workers", false, 1},
+    {"Turtle", "Win a game with 20 turrets", false, 1},
+    {"Blitz", "Win a game in under 3 minutes", false, 1},
+    {"Marathon", "Play for 30 minutes", false, 1},
+    {"Boss Slayer", "Defeat a boss enemy", false, 1},
+    {"Boss Destroyer", "Defeat 5 boss enemies", false, 5},
+    {"Collector", "Collect 10 power-ups", false, 10},
+    {"Power Overwhelming", "Collect 25 power-ups", false, 25},
+    {"Upgrade Master", "Research 5 upgrades", false, 5}
+};
+
+struct PowerUp {
+    Vec2 pos;
+    std::string type;
+    float lifetime;
+    bool active = true;
+    PowerUp(Vec2 p, std::string t, float l):pos(p),type(t),lifetime(l){}
+};
+std::vector<PowerUp> powerups;
+
+struct Boss {
+    std::string name;
+    int health;
+    int maxHealth;
+    int damage;
+    int attackRange;
+    float attackSpeed;
+    Vec2 pos;
+    bool alive;
+    std::string type;
+    Boss(std::string n, int h, int d, int ar, float as, Vec2 p, std::string t):
+        name(n), health(h), maxHealth(h), damage(d), attackRange(ar), attackSpeed(as), pos(p), alive(true), type(t) {}
+};
+std::vector<Boss> bosses;
+
+struct Weather {
+    std::string currentWeather;
+    float intensity;
+    float duration;
+    float timer;
+    bool active;
+};
+Weather weather = {"Clear", 0.0f, 0.0f, 0.0f, false};
+
+struct DayNightCycle {
+    float timeOfDay;
+    float cycleDuration;
+    bool isDay;
+    float lightLevel;
+};
+DayNightCycle dayNight = {0.5f, 120.0f, true, 1.0f};
+
+struct Upgrade {
+    std::string name;
+    std::string description;
+    int mineralCost;
+    int gasCost;
+    int researchTime;
+    bool researched = false;
+    std::string effect;
+};
+std::vector<Upgrade> upgrades = {
+    {"Stim Pack", "Increases unit attack speed by 20%", 100, 100, 60, false, "attackSpeed"},
+    {"Shield Battery", "Regenerates shields faster", 150, 100, 90, false, "shieldRegen"},
+    {"Marine Range", "Increases marine attack range by 2", 100, 75, 45, false, "range"},
+    {"Marine Damage", "Increases marine damage by 5", 100, 75, 45, false, "damage"},
+    {"Tank Siege Mode", "Unlocks siege mode for tanks", 150, 100, 90, false, "siege"},
+    {"Medic Healing", "Increases medic healing by 50%", 100, 100, 60, false, "healing"},
+    {"Ghost Cloak", "Allows ghost to cloak", 200, 150, 120, false, "cloak"},
+    {"Vulture Speed", "Increases vulture movement speed", 100, 75, 45, false, "speed"},
+    {"Goliath Range", "Increases goliath attack range", 125, 100, 60, false, "range"},
+    {"Wraith Cloak", "Allows wraith to cloak", 200, 150, 120, false, "cloak"},
+    {"Battlecruiser Yamato", "Unlocks yamato cannon", 250, 200, 150, false, "yamato"},
+    {"Science Vessel Defensive", "Increases science vessel durability", 150, 150, 90, false, "durability"},
+    {"Firebat Damage", "Increases firebat damage by 10", 100, 75, 45, false, "damage"},
+    {"Dropship Capacity", "Increases dropship unit capacity", 100, 75, 45, false, "capacity"},
+    {"Valkyrie Damage", "Increases valkyrie damage against air", 175, 125, 90, false, "airDamage"}
+};
+
+struct Leaderboard {
+    std::string playerName;
+    int score;
+    int wavesCompleted;
+    float gameTime;
+    int kills;
+};
+std::vector<Leaderboard> leaderboard;
+
+struct Particle {
+    Vec2 pos;
+    Vec2 vel;
+    float lifetime;
+    float age;
+    char glyph;
+    bool active;
+    Particle(Vec2 p, Vec2 v, float l, char g):pos(p),vel(v),lifetime(l),age(0),glyph(g),active(true){}
+};
+std::vector<Particle> particles;
+
+enum class TerrainType { Grass, Water, Mountain, Forest, Sand, Rock, Lava, Ice, Swamp, Desert, Snow, Cliff, Canyon, Valley, Beach };
+enum class SpecialAbility { None, Stim, Heal, Cloak, SiegeMode, Yamato, Irradiate, PsionicStorm, Lockdown,EMP, ScannerSweep, DefensiveMatrix, Restoration, OpticalFlare, EMPShockwave, SpawnBroodlings, DarkSwarm, Plague, Consume, Burrow, SpawnLurker, ArchonWarp, PhaseShift, StasisField, PsionicHold, Feedback, Maelstrom, Parasite, Ensnare, GravityFlux, Vortex };
+
+struct Terrain {
+    std::vector<std::vector<TerrainType>> tiles;
+    std::vector<std::vector<int>> elevation;
+    void generate(int w, int h) {
+        tiles.resize(h, std::vector<TerrainType>(w, TerrainType::Grass));
+        elevation.resize(h, std::vector<int>(w, 0));
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int r = rand() % 100;
+                if (r < 5) tiles[y][x] = TerrainType::Water;
+                else if (r < 10) tiles[y][x] = TerrainType::Mountain;
+                else if (r < 15) tiles[y][x] = TerrainType::Forest;
+                else if (r < 18) tiles[y][x] = TerrainType::Sand;
+                else if (r < 20) tiles[y][x] = TerrainType::Rock;
+                else if (r < 22) tiles[y][x] = TerrainType::Lava;
+                else if (r < 24) tiles[y][x] = TerrainType::Ice;
+                else if (r < 26) tiles[y][x] = TerrainType::Swamp;
+                else if (r < 28) tiles[y][x] = TerrainType::Desert;
+                else if (r < 30) tiles[y][x] = TerrainType::Snow;
+                elevation[y][x] = rand() % 5;
+            }
+        }
+    }
+    char getGlyph(int x, int y) const {
+        if (x < 0 || x >= (int)tiles[0].size() || y < 0 || y >= (int)tiles.size()) return '.';
+        switch(tiles[y][x]) {
+            case TerrainType::Grass: return '.';
+            case TerrainType::Water: return '~';
+            case TerrainType::Mountain: return '^';
+            case TerrainType::Forest: return '%';
+            case TerrainType::Sand: return '_';
+            case TerrainType::Rock: return 'O';
+            case TerrainType::Lava: return '*';
+            case TerrainType::Ice: return '#';
+            case TerrainType::Swamp: return '~';
+            case TerrainType::Desert: return '.';
+            case TerrainType::Snow: return '*';
+            case TerrainType::Cliff: return '|';
+            case TerrainType::Canyon: return 'V';
+            case TerrainType::Valley: return 'U';
+            case TerrainType::Beach: return '=';
+        }
+        return '.';
+    }
+    bool isWalkable(int x, int y) const {
+        if (x < 0 || x >= (int)tiles[0].size() || y < 0 || y >= (int)tiles.size()) return false;
+        TerrainType t = tiles[y][x];
+        return t != TerrainType::Water && t != TerrainType::Mountain && t != TerrainType::Lava && t != TerrainType::Cliff && t != TerrainType::Canyon;
+    }
+    float getMoveCost(int x, int y) const {
+        if (!isWalkable(x, y)) return 999.0f;
+        if (x < 0 || x >= (int)tiles[0].size() || y < 0 || y >= (int)tiles.size()) return 999.0f;
+        switch(tiles[y][x]) {
+            case TerrainType::Grass: return 1.0f;
+            case TerrainType::Forest: return 1.5f;
+            case TerrainType::Sand: return 1.2f;
+            case TerrainType::Rock: return 1.3f;
+            case TerrainType::Ice: return 1.1f;
+            case TerrainType::Swamp: return 2.0f;
+            case TerrainType::Desert: return 1.3f;
+            case TerrainType::Snow: return 1.2f;
+            case TerrainType::Valley: return 0.8f;
+            case TerrainType::Beach: return 1.0f;
+            default: return 1.0f;
+        }
+    }
+    int getDefenseBonus(int x, int y) const {
+        if (x < 0 || x >= (int)tiles[0].size() || y < 0 || y >= (int)tiles.size()) return 0;
+        switch(tiles[y][x]) {
+            case TerrainType::Forest: return 2;
+            case TerrainType::Mountain: return 5;
+            case TerrainType::Rock: return 3;
+            case TerrainType::Cliff: return 4;
+            default: return 0;
+        }
+    }
+};
+
+struct SpecialAbilityData {
+    SpecialAbility ability;
+    float cooldown;
+    float currentCooldown;
+    float duration;
+    float range;
+    int damage;
+    SpecialAbilityData(SpecialAbility a, float cd, float d, float r, int dmg):
+        ability(a), cooldown(cd), currentCooldown(0), duration(d), range(r), damage(dmg) {}
+};
+std::map<UnitType, std::vector<SpecialAbilityData>> unitAbilities;
+
+struct Event {
+    std::string name;
+    std::string description;
+    float triggerTime;
+    bool triggered;
+    std::function<void()> action;
+};
+std::vector<Event> events;
+
+struct CampaignMission {
+    std::string name;
+    std::string description;
+    std::string map;
+    int difficulty;
+    int recommendedUnits;
+    std::vector<std::string> objectives;
+    bool completed;
+    CampaignMission(std::string n, std::string d, std::string m, int dif, int rec, std::vector<std::string> obj):
+        name(n), description(d), map(m), difficulty(dif), recommendedUnits(rec), objectives(obj), completed(false) {}
+};
+std::vector<CampaignMission> campaign = {
+    CampaignMission("First Contact", "Defend your base against the initial zerg assault", "desert.map", 1, 10, {"Survive 5 minutes", "Destroy 20 zerglings"}),
+    CampaignMission("The Rally", "Gather resources and build your army", "plains.map", 1, 5, {"Collect 2000 minerals", "Build 3 barracks"}),
+    CampaignMission("Enemy Territory", "Infiltrate the enemy base", "mountains.map", 2, 20, {"Destroy enemy command center", "Survive"}),
+    CampaignMission("The Swarm", "Survive the zerg swarm", "swamp.map", 3, 30, {"Survive 10 waves", "Kill 100 units"}),
+    CampaignMission("Air Superiority", "Control the skies", "islands.map", 2, 25, {"Destroy enemy starport", "Build wraiths"}),
+    CampaignMission("Ground Assault", "Lead a ground assault on the enemy", "valley.map", 3, 40, {"Destroy all enemy buildings", "No units lost"}),
+    CampaignMission("The Protoss Arrival", "Encounter the Protoss empire", "temple.map", 4, 50, {"Defeat the Protoss scouts", "Research dark templar"}),
+    CampaignMission("Zerg Horde", "Face the full zerg horde", "nest.map", 4, 60, {"Survive 20 waves", "Destroy Overmind"}),
+    CampaignMission("Protoss Awakening", "Engage the full Protoss army", "nexus.map", 5, 70, {"Destroy 5 gateways", "Kill High Templar"}),
+    CampaignMission("Final Stand", "The ultimate battle for survival", "arena.map", 5, 100, {"Destroy all enemy bases", "Win the game"})
+};
+
+struct InventoryItem {
+    std::string name;
+    std::string description;
+    std::string type;
+    int value;
+    int quantity;
+    bool usable;
+    InventoryItem(std::string n, std::string d, std::string t, int v, int q, bool u):
+        name(n), description(d), type(t), value(v), quantity(q), usable(u) {}
+};
+std::vector<InventoryItem> inventory;
+
+struct ChatMessage {
+    std::string sender;
+    std::string message;
+    float timestamp;
+    ChatMessage(std::string s, std::string m, float t):sender(s),message(m),timestamp(t){}
+};
+std::vector<ChatMessage> chatMessages;
+
+struct ConsoleCommand {
+    std::string name;
+    std::string description;
+    std::function<void(std::vector<std::string>)> func;
+    ConsoleCommand(std::string n, std::string d, std::function<void(std::vector<std::string>)> f):name(n),description(d),func(f){}
+};
+std::vector<ConsoleCommand> consoleCommands;
+
+struct NetworkPlayer {
+    std::string name;
+    int id;
+    bool connected;
+    Vec2 pos;
+    int score;
+    NetworkPlayer(std::string n, int i):name(n),id(i),connected(true),score(0){}
+};
+std::vector<NetworkPlayer> networkPlayers;
 
 Resource playerResources;
 Resource enemyResources;
@@ -396,6 +848,7 @@ MinimapData minimap;
 FogOfWar fog;
 TechTree techTree;
 GameStats stats;
+Terrain terrain;
 int camX = 0, camY = 0;
 int selectedCount = 0;
 GameState gameState = GameState::Playing;
@@ -403,6 +856,10 @@ GameMode gameMode = GameMode::Skirmish;
 int waveNumber = 0;
 float waveTimer = 60.0f;
 float gameTime = 0.0f;
+bool isPaused = false;
+bool debugMode = false;
+bool godMode = false;
+bool infiniteResources = false;
 
 void initGame() {
     srand(time(nullptr));
@@ -444,11 +901,323 @@ void initGame() {
     minimap.generate(MAP_W, MAP_H);
     fog.w = MAP_W; fog.h = MAP_H;
     fog.generate(MAP_W, MAP_H);
+    terrain.generate(MAP_W, MAP_H);
     
     playerResources.minerals = 500;
     playerResources.supplyMax = 20;
     enemyResources.minerals = 500;
     enemyResources.supplyMax = 20;
+}
+
+void spawnPowerUp(Vec2 pos) {
+    std::string types[] = {"Health", "Shield", "Speed", "Damage", "Resource", "Invulnerability", "Nuke", "Reveal", "Heal", "Repair", "Energy", "ShieldRegen", "AttackSpeed", "MoveSpeed", "Armor", "Vision", "Cloak", "Teleport", "Resurrect", "Barrage"};
+    std::string type = types[rand() % 20];
+    powerups.emplace_back(pos, type, 30.0f + rand() % 30);
+}
+
+void spawnBoss() {
+    std::vector<std::string> names = {"Overmind", "Kerrigan", "Artanis", "Amon", "Abathur", "Zagara", "Dehaka", "Nova", "Raynor", "Mengsk", "Fenix", "Aldaris", "Tassadar", "JimRaynor", "SarahKerrigan", "Duran", "SamirDuran", "AlexeiStukov", "Magellan", "Horner"};
+    std::string name = names[rand() % 20];
+    int health = 500 + waveNumber * 100;
+    int damage = 20 + waveNumber * 5;
+    Vec2 pos(275 + rand() % 5, 275 + rand() % 5);
+    bosses.emplace_back(name, health, damage, 8, 2.0f, pos, "boss");
+}
+
+void spawnEliteEnemy() {
+    std::string names[] = {"EliteMarine", "EliteTank", "EliteZergling", "EliteUltralisk", "EliteGhost", "EliteBattlecruiser", "EliteZealot", "EliteDragoon"};
+    std::string name = names[rand() % 8];
+    Vec2 pos(275 + rand() % 5, 275 + rand() % 5);
+    UnitType type;
+    switch(rand() % 8) {
+        case 0: type = UnitType::Marine; break;
+        case 1: type = UnitType::Tank; break;
+        case 2: type = UnitType::Zergling; break;
+        case 3: type = UnitType::Ultralisk; break;
+        case 4: type = UnitType::Ghost; break;
+        case 5: type = UnitType::Battlecruiser; break;
+        case 6: type = UnitType::Zealot; break;
+        case 7: type = UnitType::Dragoon; break;
+    }
+    Unit u(pos, type, Team::Enemy);
+    u.maxHealth *= 2;
+    u.health = u.maxHealth;
+    u.attackPower = (int)(u.attackPower * 1.5);
+    units.push_back(u);
+}
+
+struct Map {
+    std::string name;
+    std::string description;
+    int width;
+    int height;
+    int resourceDensity;
+    int enemyDensity;
+    std::vector<std::string> features;
+    Map(std::string n, std::string d, int w, int h, int rd, int ed, std::vector<std::string> f):
+        name(n), description(d), width(w), height(h), resourceDensity(rd), enemyDensity(ed), features(f) {}
+};
+std::vector<Map> maps = {
+    Map("Plains", "Open terrain with scattered resources", 300, 300, 20, 10, {"grass", "minerals"}),
+    Map("Desert", "Arid wasteland with limited water", 400, 400, 15, 15, {"sand", "rocks", "cacti"}),
+    Map("Mountains", "Rugged terrain with defensive positions", 350, 350, 18, 12, {"peaks", "valleys", "cliffs"}),
+    Map("Islands", "Archipelago with water separating land masses", 500, 500, 25, 8, {"water", "beaches"}),
+    Map("Swamp", "Muddy terrain that slows movement", 400, 400, 22, 18, {"water", "trees", "fog"}),
+    Map("Arctic", "Frozen tundra with limited resources", 450, 450, 10, 20, {"ice", "snow", "blizzard"}),
+    Map("Jungle", "Dense forest with rich resources", 350, 350, 30, 15, {"trees", "vines", "wildlife"}),
+    Map("Volcanic", "Active volcanic region with lava hazards", 400, 400, 15, 25, {"lava", "ash", "geysers"}),
+    Map("Urban", "Ruined cityscape with many structures", 500, 500, 20, 30, {"buildings", "ruins", "debris"}),
+    Map("Space", "Orbital platform with zero gravity", 600, 600, 25, 35, {"asteroids", "debris", "radiation"}),
+    Map("Underground", "Cave system with narrow passages", 300, 300, 18, 22, {"tunnels", "caverns", "rivers"}),
+    Map("Coastal", "Beaches and shallow waters", 400, 400, 22, 12, {"beach", "reef", "docks"}),
+    Map("Tundra", "Frozen plains with permafrost", 450, 450, 12, 18, {"snow", "ice", "aurora"}),
+    Map("Savanna", "Grassy plains with scattered trees", 500, 500, 28, 10, {"grass", "acacia", "waterholes"}),
+    Map("Canyon", "Deep ravines and rocky outcrops", 350, 350, 15, 20, {"cliffs", "rivers", "caves"}),
+    Map("Marsh", "Wetlands with tall reeds", 400, 400, 20, 16, {"water", "reeds", "islands"}),
+    Map("Forest", "Dense woodland with hidden paths", 450, 450, 25, 14, {"trees", "clearings", "streams"}),
+    Map("Prairie", "Endless grasslands with few trees", 600, 600, 15, 8, {"grass", "wildflowers", "hills"}),
+    Map("Oasis", "Desert haven with abundant water", 300, 300, 35, 5, {"palms", "water", "sand"}),
+    Map("Crater", "Impact zone with destroyed ships", 400, 400, 18, 28, {"crater", "debris", " wreckage"}),
+    Map("Highlands", "Mountain peaks with strategic advantage", 450, 450, 20, 22, {"peaks", "cliffs", "wind"}),
+    Map("Wasteland", "Radioactive ruins of civilization", 500, 500, 10, 30, {"radiation", "ruins", "mutants"}),
+    Map("Archipelago", "Chain of small islands", 600, 600, 22, 10, {"islands", "reefs", "beaches"}),
+    Map("Glacier", "Massive ice formations", 550, 550, 8, 15, {"ice", "crevasses", "cold"}),
+    Map("Reef", "Underwater coral formations", 400, 400, 30, 20, {"coral", "fish", "caves"})
+};
+
+struct AchievementTier {
+    std::string name;
+    std::vector<Achievement> achievements;
+    bool unlocked = false;
+    AchievementTier(std::string n, std::vector<Achievement> a): name(n), achievements(a) {}
+};
+std::vector<AchievementTier> achievementTiers = {
+    AchievementTier("Bronze", {achievements[0], achievements[1], achievements[2]}),
+    AchievementTier("Silver", {achievements[3], achievements[4], achievements[5]}),
+    AchievementTier("Gold", {achievements[6], achievements[7], achievements[8]}),
+    AchievementTier("Platinum", {achievements[9], achievements[10], achievements[11]}),
+    AchievementTier("Diamond", {achievements[12], achievements[13], achievements[14]}),
+    AchievementTier("Master", {achievements[15], achievements[16], achievements[17]}),
+    AchievementTier("Grandmaster", {achievements[18], achievements[19], achievements[20]})
+};
+
+struct DailyChallenge {
+    std::string name;
+    std::string description;
+    std::string map;
+    int difficulty;
+    std::vector<std::string> modifiers;
+    DailyChallenge(std::string n, std::string d, std::string m, int dif, std::vector<std::string> mod):
+        name(n), description(d), map(m), difficulty(dif), modifiers(mod) {}
+};
+std::vector<DailyChallenge> dailyChallenges = {
+    DailyChallenge("Speed Run", "Defeat all enemies in under 5 minutes", "plains", 3, {"fastEnemies", "slowPlayer", "noPause"}),
+    DailyChallenge("Resource Rush", "Win with minimal resources", "desert", 4, {"lowResources", "fastEnemies", "noRepair"}),
+    DailyChallenge("Last Stand", "Survive as long as possible", "urban", 5, {"endlessWaves", "strongEnemies", "noRecovery"}),
+    DailyChallenge("No Buildings", "Win without constructing buildings", "plains", 3, {"noBuilding", "startingUnits", "speedBonus"}),
+    DailyChallenge("Glass Cannon", "Win using only damage units", "mountains", 4, {"noTanks", "highDamage", "lowHealth"}),
+    DailyChallenge("Defensive Master", "Win using only defensive structures", "islands", 3, {"onlyTurrets", "noAttack", "strongWalls"}),
+    DailyChallenge("Air Superiority", "Win using only air units", "archipelago", 4, {"onlyAir", "antiAirEnemies", "highAltitude"}),
+    DailyChallenge("Zerg Rush", "Win using only zerg units", "jungle", 3, {"onlyZerg", "fastSpawn", "swarmBonus"}),
+    DailyChallenge("Terran Tech", "Win using only terran units", "urban", 4, {"onlyTerran", "mechOnly", "techBonus"}),
+    DailyChallenge("Protoss Precision", "Win using only protoss units", "highlands", 5, {"onlyProtoss", "highTech", "shieldBonus"}),
+    DailyChallenge("Mixed Fleet", "Win using all unit types", "space", 5, {"allUnits", "coordination", "versatility"}),
+    DailyChallenge("Nightmare Mode", "Survive the toughest challenges", "wasteland", 10, {"allMods", "bossRush", "noMercy"})
+};
+
+struct WeeklyChallenge {
+    std::string name;
+    std::string description;
+    int difficulty;
+    std::vector<std::string> rewards;
+    WeeklyChallenge(std::string n, std::string d, int dif, std::vector<std::string> r):
+        name(n), description(d), difficulty(dif), rewards(r) {}
+};
+std::vector<WeeklyChallenge> weeklyChallenges = {
+    WeeklyChallenge("Operation Sunrise", "Liberate the occupied territory", 5, {"medal", "credits", "skins"}),
+    WeeklyChallenge("Operation Midnight", "Strike under cover of darkness", 6, {"medal", "credits", "units"}),
+    WeeklyChallenge("Operation Thunder", "Destroy the enemy command", 7, {"medal", "credits", "buildings"}),
+    WeeklyChallenge("Operation Blizzard", "Survive the frozen wasteland", 8, {"medal", "credits", "terrain"}),
+    WeeklyChallenge("Operation Inferno", "Conquer the volcanic region", 9, {"medal", "credits", "damage"}),
+    WeeklyChallenge("Operation Storm", "Weather the cosmic storm", 10, {"medal", "credits", "all"}),
+    WeeklyChallenge("Operation Unity", "Unite all factions", 10, {"medal", "credits", "allUnits", "allBuildings"})
+};
+
+struct Tournament {
+    std::string name;
+    std::vector<std::string> participants;
+    int currentRound;
+    std::string prize;
+    bool completed;
+    Tournament(std::string n, int rounds, std::string p):
+        name(n), currentRound(0), prize(p), completed(false) {}
+};
+std::vector<Tournament> tournaments;
+
+struct Season {
+    std::string name;
+    int number;
+    std::string startDate;
+    std::string endDate;
+    std::vector<std::string> rewards;
+    bool active;
+    Season(std::string n, int num, std::string s, std::string e, std::vector<std::string> r):
+        name(n), number(num), startDate(s), endDate(e), rewards(r), active(true) {}
+};
+std::vector<Season> seasons = {
+    Season("Season 1: Awakening", 1, "2026-01-01", "2026-03-31", {"bronze_skin", "silver_skin", "gold_skin"}),
+    Season("Season 2: Ascension", 2, "2026-04-01", "2026-06-30", {"epic_skin", "legendary_skin", "mythic_skin"}),
+    Season("Season 3: Dominion", 3, "2026-07-01", "2026-09-30", {"unique_skin", "rare_skin", "epic_skin"}),
+    Season("Season 4: Reckoning", 4, "2026-10-01", "2026-12-31", {"legendary_skin", "mythic_skin", "ultimate_skin"})
+};
+
+void applyPowerUp(Unit& u, PowerUp& p) {
+    if (p.type == "Health") u.health = std::min(u.maxHealth, u.health + 50);
+    else if (p.type == "Shield") u.maxHealth += 20;
+    else if (p.type == "Speed") u.attackCooldown -= 0.2f;
+    else if (p.type == "Damage") u.attackPower += 5;
+    else if (p.type == "Resource") playerResources.minerals += 100;
+    else if (p.type == "Invulnerability") u.alive = true;
+    p.active = false;
+}
+
+void triggerEvent(Event& e) {
+    if (e.triggered) return;
+    e.triggered = true;
+    e.action();
+}
+
+void spawnWeather() {
+    std::string weathers[] = {"Clear", "Rain", "Storm", "Fog", "Snow", "Sandstorm", "Nuclear Fallout"};
+    weather.currentWeather = weathers[rand() % 7];
+    weather.intensity = 0.5f + (rand() % 50) / 100.0f;
+    weather.duration = 30.0f + (rand() % 120);
+    weather.timer = weather.duration;
+    weather.active = true;
+}
+
+void updateDayNight(float dt) {
+    dayNight.timeOfDay += dt / dayNight.cycleDuration;
+    if (dayNight.timeOfDay >= 1.0f) dayNight.timeOfDay -= 1.0f;
+    dayNight.isDay = dayNight.timeOfDay < 0.25f || dayNight.timeOfDay > 0.75f;
+    dayNight.lightLevel = dayNight.isDay ? 1.0f : 0.3f + 0.3f * std::sin(dayNight.timeOfDay * 3.14159f * 2);
+}
+
+void unlockAchievement(std::string name) {
+    for (auto& a : achievements) {
+        if (a.name == name && !a.unlocked) {
+            a.unlocked = true;
+        }
+    }
+}
+
+void checkAchievements() {
+    if (stats.unitsKilled >= 1) unlockAchievement("First Blood");
+    if (waveNumber >= 1) unlockAchievement("Rusher");
+    if (waveNumber >= 5) unlockAchievement("Veteran");
+    if (waveNumber >= 10) unlockAchievement("Elite");
+    if (waveNumber >= 20) unlockAchievement("Legendary");
+    if (stats.resourcesGathered >= 1000) unlockAchievement("Economist");
+    if (stats.resourcesGathered >= 5000) unlockAchievement("Wealthy");
+    if (stats.buildingsBuilt >= 10) unlockAchievement("Builder");
+    if (stats.buildingsBuilt >= 25) unlockAchievement("Constructor");
+    if (stats.unitsBuilt >= 50) unlockAchievement("Army Builder");
+    if (stats.unitsBuilt >= 100) unlockAchievement("Horde");
+    if (stats.buildingsDestroyed >= 10) unlockAchievement("Destroyer");
+    if (stats.buildingsDestroyed >= 25) unlockAchievement("Raider");
+    if (stats.buildingsDestroyed >= 50) unlockAchievement("Overwhelming Force");
+}
+
+void addParticle(Vec2 pos, Vec2 vel, float lifetime, char glyph) {
+    particles.emplace_back(pos, vel, lifetime, glyph);
+}
+
+void updateParticles(float dt) {
+    for (auto& p : particles) {
+        if (!p.active) continue;
+        p.age += dt;
+        if (p.age >= p.lifetime) {
+            p.active = false;
+            continue;
+        }
+        p.pos = p.pos + p.vel;
+        addParticle(p.pos, Vec2(rand()%3-1, rand()%3-1), 0.5f, '*');
+    }
+    particles.erase(std::remove_if(particles.begin(), particles.end(), [](const Particle& p){ return !p.active; }), particles.end());
+}
+
+void addInventoryItem(InventoryItem item) {
+    for (auto& i : inventory) {
+        if (i.name == item.name) {
+            i.quantity += item.quantity;
+            return;
+        }
+    }
+    inventory.push_back(item);
+}
+
+void useInventoryItem(int index) {
+    if (index < 0 || index >= (int)inventory.size()) return;
+    InventoryItem& item = inventory[index];
+    if (!item.usable) return;
+    if (item.type == "Consumable") {
+        if (item.name == "Health Pack") {
+            for (auto& u : units) {
+                if (u.team == Team::Player && u.alive) {
+                    u.health = std::min(u.maxHealth, u.health + item.value);
+                }
+            }
+        } else if (item.name == "Mineral Pack") {
+            playerResources.minerals += item.value;
+        }
+        item.quantity--;
+        if (item.quantity <= 0) {
+            inventory.erase(inventory.begin() + index);
+        }
+    }
+}
+
+void sendChatMessage(std::string sender, std::string message) {
+    chatMessages.emplace_back(sender, message, gameTime);
+    if ((int)chatMessages.size() > 100) {
+        chatMessages.erase(chatMessages.begin());
+    }
+}
+
+void executeConsoleCommand(std::string cmd) {
+    std::istringstream iss(cmd);
+    std::string name;
+    iss >> name;
+    for (auto& c : consoleCommands) {
+        if (c.name == name) {
+            std::vector<std::string> args;
+            std::string arg;
+            while (iss >> arg) args.push_back(arg);
+            c.func(args);
+            return;
+        }
+    }
+}
+
+void addUnitAbilities() {
+    unitAbilities[UnitType::Marine] = {SpecialAbilityData(SpecialAbility::Stim, 30.0f, 0, 0, 0)};
+    unitAbilities[UnitType::Medic] = {SpecialAbilityData(SpecialAbility::Heal, 15.0f, 5.0f, 5, 10)};
+    unitAbilities[UnitType::Ghost] = {SpecialAbilityData(SpecialAbility::Cloak, 60.0f, 0, 0, 0), SpecialAbilityData(SpecialAbility::EMP, 45.0f, 0, 8, 50)};
+    unitAbilities[UnitType::Tank] = {SpecialAbilityData(SpecialAbility::SiegeMode, 20.0f, 0, 0, 0)};
+    unitAbilities[UnitType::Battlecruiser] = {SpecialAbilityData(SpecialAbility::Yamato, 90.0f, 0, 15, 200)};
+    unitAbilities[UnitType::ScienceVessel] = {SpecialAbilityData(SpecialAbility::Irradiate, 45.0f, 0, 10, 100), SpecialAbilityData(SpecialAbility::DefensiveMatrix, 60.0f, 0, 8, 0)};
+    unitAbilities[UnitType::Firebat] = {SpecialAbilityData(SpecialAbility::Stim, 30.0f, 0, 0, 0)};
+    unitAbilities[UnitType::Wraith] = {SpecialAbilityData(SpecialAbility::Cloak, 60.0f, 0, 0, 0)};
+    unitAbilities[UnitType::DarkTemplar] = {SpecialAbilityData(SpecialAbility::Cloak, 30.0f, 0, 0, 0)};
+    unitAbilities[UnitType::HighTemplar] = {SpecialAbilityData(SpecialAbility::PsionicStorm, 90.0f, 0, 12, 150), SpecialAbilityData(SpecialAbility::Feedback, 45.0f, 0, 8, 0)};
+    unitAbilities[UnitType::Queen] = {SpecialAbilityData(SpecialAbility::SpawnBroodlings, 120.0f, 0, 10, 0), SpecialAbilityData(SpecialAbility::Ensnare, 60.0f, 0, 10, 0)};
+    unitAbilities[UnitType::Defiler] = {SpecialAbilityData(SpecialAbility::DarkSwarm, 90.0f, 0, 12, 0), SpecialAbilityData(SpecialAbility::Plague, 120.0f, 0, 10, 100), SpecialAbilityData(SpecialAbility::Consume, 30.0f, 0, 3, 0)};
+    unitAbilities[UnitType::Lurker] = {SpecialAbilityData(SpecialAbility::Burrow, 20.0f, 0, 0, 0)};
+    unitAbilities[UnitType::Zergling] = {SpecialAbilityData(SpecialAbility::Burrow, 15.0f, 0, 0, 0)};
+    unitAbilities[UnitType::Ultralisk] = {SpecialAbilityData(SpecialAbility::Burrow, 25.0f, 0, 0, 0)};
+    unitAbilities[UnitType::Archon] = {SpecialAbilityData(SpecialAbility::PsionicStorm, 90.0f, 0, 12, 150)};
+    unitAbilities[UnitType::Arbiter] = {SpecialAbilityData(SpecialAbility::StasisField, 90.0f, 0, 10, 0), SpecialAbilityData(SpecialAbility::PhaseShift, 60.0f, 0, 8, 0)};
+    unitAbilities[UnitType::Ghost] = {SpecialAbilityData(SpecialAbility::Lockdown, 90.0f, 0, 10, 0), SpecialAbilityData(SpecialAbility::EMP, 45.0f, 0, 8, 50)};
 }
 
 void updateMinimap() {
@@ -998,7 +1767,292 @@ void handleInput() {
             break;
         }
         case ' ': {
-            // Build mode
+            break;
+        }
+        case 'e': case 'E': {
+            if (playerResources.minerals >= 150) {
+                Building* cc = findNearestBuilding(Vec2(camX + COLS/2, camY + LINES/2), BuildingType::CommandCentre, Team::Player);
+                if (cc) {
+                    Vec2 pos(cc->pos.x + 5, cc->pos.y + 5);
+                    if (!isOccupied(pos)) {
+                        buildings.emplace_back(pos, BuildingType::Barracks, Team::Player);
+                        playerResources.minerals -= 150;
+                        stats.buildingsBuilt++;
+                    }
+                }
+            }
+            break;
+        }
+        case 'f': case 'F': {
+            if (playerResources.minerals >= 200) {
+                Building* cc = findNearestBuilding(Vec2(camX + COLS/2, camY + LINES/2), BuildingType::CommandCentre, Team::Player);
+                if (cc) {
+                    Vec2 pos(cc->pos.x + 8, cc->pos.y + 5);
+                    if (!isOccupied(pos)) {
+                        buildings.emplace_back(pos, BuildingType::Factory, Team::Player);
+                        playerResources.minerals -= 200;
+                        stats.buildingsBuilt++;
+                    }
+                }
+            }
+            break;
+        }
+        case 'o': case 'O': {
+            if (playerResources.minerals >= 250) {
+                Building* cc = findNearestBuilding(Vec2(camX + COLS/2, camY + LINES/2), BuildingType::CommandCentre, Team::Player);
+                if (cc) {
+                    Vec2 pos(cc->pos.x + 11, cc->pos.y + 5);
+                    if (!isOccupied(pos)) {
+                        buildings.emplace_back(pos, BuildingType::Starport, Team::Player);
+                        playerResources.minerals -= 250;
+                        stats.buildingsBuilt++;
+                    }
+                }
+            }
+            break;
+        }
+        case 'i': case 'I': {
+            if (playerResources.minerals >= 100) {
+                Building* cc = findNearestBuilding(Vec2(camX + COLS/2, camY + LINES/2), BuildingType::CommandCentre, Team::Player);
+                if (cc) {
+                    Vec2 pos(cc->pos.x - 5, cc->pos.y);
+                    if (!isOccupied(pos)) {
+                        buildings.emplace_back(pos, BuildingType::SupplyDepot, Team::Player);
+                        playerResources.minerals -= 100;
+                        playerResources.supplyMax += 8;
+                        stats.buildingsBuilt++;
+                    }
+                }
+            }
+            break;
+        }
+        case 'u': case 'U': {
+            if (playerResources.minerals >= 100) {
+                Building* cc = findNearestBuilding(Vec2(camX + COLS/2, camY + LINES/2), BuildingType::CommandCentre, Team::Player);
+                if (cc) {
+                    Vec2 pos(cc->pos.x - 5, cc->pos.y + 5);
+                    if (!isOccupied(pos)) {
+                        buildings.emplace_back(pos, BuildingType::Refinery, Team::Player);
+                        playerResources.minerals -= 100;
+                        stats.buildingsBuilt++;
+                    }
+                }
+            }
+            break;
+        }
+        case 'k': case 'K': {
+            if (playerResources.minerals >= 75) {
+                Building* cc = findNearestBuilding(Vec2(camX + COLS/2, camY + LINES/2), BuildingType::CommandCentre, Team::Player);
+                if (cc) {
+                    Vec2 pos(cc->pos.x + 3, cc->pos.y - 3);
+                    if (!isOccupied(pos)) {
+                        buildings.emplace_back(pos, BuildingType::Turret, Team::Player);
+                        playerResources.minerals -= 75;
+                        stats.buildingsBuilt++;
+                    }
+                }
+            }
+            break;
+        }
+        case 'j': case 'J': {
+            if (playerResources.minerals >= 100) {
+                Building* cc = findNearestBuilding(Vec2(camX + COLS/2, camY + LINES/2), BuildingType::CommandCentre, Team::Player);
+                if (cc) {
+                    Vec2 pos(cc->pos.x + 3, cc->pos.y + 3);
+                    if (!isOccupied(pos)) {
+                        buildings.emplace_back(pos, BuildingType::Bunker, Team::Player);
+                        playerResources.minerals -= 100;
+                        stats.buildingsBuilt++;
+                    }
+                }
+            }
+            break;
+        }
+        case 'l': case 'L': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Medic, Team::Player);
+                    playerResources.minerals -= 100;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'y': case 'Y': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Tank, Team::Player);
+                    playerResources.minerals -= 300;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'h': case 'H': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Fighter, Team::Player);
+                    playerResources.minerals -= 250;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'n': case 'N': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Ghost, Team::Player);
+                    playerResources.minerals -= 200;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'g': case 'G': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Goliath, Team::Player);
+                    playerResources.minerals -= 250;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'x': case 'X': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Firebat, Team::Player);
+                    playerResources.minerals -= 150;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'z': case 'Z': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Wraith, Team::Player);
+                    playerResources.minerals -= 200;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'v': case 'V': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::ScienceVessel, Team::Player);
+                    playerResources.minerals -= 350;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 'b': case 'B': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Battlecruiser, Team::Player);
+                    playerResources.minerals -= 600;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case '/': case '?': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Dropship, Team::Player);
+                    playerResources.minerals -= 250;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case 't': case 'T': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Vulture, Team::Player);
+                    playerResources.minerals -= 150;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case ';': case ':': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Corsair, Team::Player);
+                    playerResources.minerals -= 200;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case '\'': case '"': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Scout, Team::Player);
+                    playerResources.minerals -= 100;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case '[': case '{': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::DarkTemplar, Team::Player);
+                    playerResources.minerals -= 250;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case ']': case '}': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Dragoon, Team::Player);
+                    playerResources.minerals -= 200;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case '\\': case '|': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Zealot, Team::Player);
+                    playerResources.minerals -= 150;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case '.': case '>': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Carrier, Team::Player);
+                    playerResources.minerals -= 550;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case ',': case '<': {
+            for (auto& u : units) {
+                if (u.selected && u.team == Team::Player && u.alive) {
+                    units.emplace_back(Vec2(u.pos.x + 1, u.pos.y + 1), UnitType::Reaver, Team::Player);
+                    playerResources.minerals -= 400;
+                    stats.unitsBuilt++;
+                }
+            }
+            break;
+        }
+        case '`': case '~': {
+            if (debugMode) {
+                godMode = !godMode;
+                infiniteResources = !infiniteResources;
+            }
             break;
         }
         default:
@@ -1024,6 +2078,7 @@ int main() {
     }
     
     initGame();
+    addUnitAbilities();
     
     float lastTime = clock();
     while (true) {
